@@ -63,6 +63,10 @@ function setup_docker() {
 
     newgrp docker
     echo "docker group loaded."
+
+    # explicitly enable docker
+    echo "explicitly enable docker"
+    sudo systemctl enable --now docker
 }
 
 function install_nginx(){

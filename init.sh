@@ -22,9 +22,12 @@ function main() {
     echo "Updating repository";
     sudo apt-get update && sudo apt-get upgrade -y;
 
+    echo "================================";
     install_tmux;
+    echo "================================";
     install_git;
-    install_inginx;
+    echo "================================";
+    install_nginx;
 
     # setup docker
     echo "Setting up Docker";

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ../.env
+source .env
 
 forwarded=(
     "18443:localhost:8443"

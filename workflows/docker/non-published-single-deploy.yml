@@ -1,0 +1,68 @@
+name:
+
+on:
+  push:
+    branches: main
+
+env:
+  CONTAINER_BASE_NAME: "sample_container"
+  CONTAINER_NETWORK: "sample_container_network"
+  CONTAINER_IP: "sample_container_address"
+
+  IMAGE_BASE_NAME: "sample_image"
+  IMAGE_BACKUP_LENGTH: 6
+
+  PROJECT_DIRECTORY: /home/username/projects/git_repo_name
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          cd ${{ env.PROJECT_DIRECTORY }}
+          git pull origin main --rebase
+
+      - name: Store Git SHA
+        id: prepare_sha
+        run: |
+          # store latest sha on `prepare_sha`
+          echo "sha_latest=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Docker build
+        run: |
+          # Build docker
+          docker build -t "${{ env.IMAGE_BASE_NAME }}:${{ steps.prepare_sha.outputs.sha_latest }}"
+
+      - name: Save SHA on deployment stack
+        run: |
+          # ensure deployment stack exists
+          touch "~/.var/deploy/logs/stack-${{ env.CONTAINER_BASE_NAME }}.txt"
+
+          # prepend sha on deployment stack
+          git rev-parse --short HEAD | cat - "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.txt" 2>/dev/null > /var/deploy/sha_stack.tmp && mv "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.tmp" "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.txt"
+
+      - name: Pop the last docker image
+        run: |
+          sha_pop=$(head "~/.var/deploy/logs/stack-${{ env.CONTAINER_BASE_NAME }}.txt" -n ${{ env.IMAGE_BACKUP_LENGTH }} | awk 'END{print}')
+
+          /bin/bash ~/.var/deploy/scripts/pop_image.sh "${{ env.IMAGE_BASE_NAME }}:$sha_pop" ${{ env.IMAGE_BACKUP_LENGTH }} || true
+
+      - name: Deploy the application
+        run: |
+          # stop all containers
+          docker stop "${{ env.CONTAINER_BASE_NAME }}_latest" || true
+          docker stop "${{ env.CONTAINER_BASE_NAME }}_prev" || true
+
+          # remove current previous container
+          docker rm "${{ env.CONTAINER_BASE_NAME }}_prev" || true
+
+          # rename lastest -> prev
+          docker rename "${{ env.CONTAINER_BASE_NAME }}_latest" "${{ env.CONTAINER_BASE_NAME }}_prev" || true
+
+          # run the newly build image and name name as latest
+          docker run -d --net ${{ env.CONTAINER_NETWORK }} --ip ${{ env.CONTAINER_IP }} --name "${{ env.CONTAINER_BASE_NAME }}_latest" "${{ env.IMAGE_BASE_NAME }}:${{ steps.prepare_sha.outputs.sha_latest }}"

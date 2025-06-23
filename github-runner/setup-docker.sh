@@ -24,15 +24,24 @@ function main(){
         exit
     fi
 
+    copy_relevant_scripts
     create_log_files
     create_runner_daemon
 
     echo 'LOG files can be viewed from `~/.var/deploy/logs`'
 }
 
+function copy_relevant_scripts() {
+
+    scripts_directory="~/.var/deploy/scripts"
+
+    mkdir -p $scripts_directory
+    cp "~/devops-scripts/pop_sha_stack.sh" "$scripts_directory/pop_image.sh"
+}
+
 function create_log_files() {
     echo "Creating log files"
-    mkdir ~/.var/deploy/logs
+    mkdir -p ~/.var/deploy/logs
     touch ~/.var/deploy/logs/github-runner.log
     echo "github-runner.log created"
 }

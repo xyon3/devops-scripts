@@ -36,7 +36,7 @@ jobs:
       - name: Docker build
         run: |
           # Build docker
-          docker build -t "${{ env.IMAGE_BASE_NAME }}:${{ steps.prepare_sha.outputs.sha_latest }}"
+          docker build -t "${{ env.IMAGE_BASE_NAME }}:${{ steps.prepare_sha.outputs.sha_latest }}" .
 
       - name: Save SHA on deployment stack
         run: |
@@ -44,7 +44,7 @@ jobs:
           touch "~/.var/deploy/logs/stack-${{ env.CONTAINER_BASE_NAME }}.txt"
 
           # prepend sha on deployment stack
-          git rev-parse --short HEAD | cat - "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.txt" 2>/dev/null > /var/deploy/sha_stack.tmp && mv "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.tmp" "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.txt"
+          git rev-parse --short HEAD | cat - "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.txt" 2>/dev/null > ~/.var/deploy/sha_stack.tmp && mv "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.tmp" "~/.var/deploy/logs/stack-${{ env.IMAGE_BASE_NAME }}.txt"
 
       - name: Pop the last docker image
         run: |
